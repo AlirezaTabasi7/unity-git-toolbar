@@ -1,0 +1,19 @@
+{
+    "name": "GitToolbar.Editor",
+    "rootNamespace": "GitToolbar",
+    "references": [
+        "GitToolbar.Runtime",
+        "DevLocker.VersionControl.WiseGit"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
