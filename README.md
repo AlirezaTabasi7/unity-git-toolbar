@@ -52,7 +52,7 @@ This small toolbar had been on my mind for a long time. Now that I have access t
 ## Installation
 
 1. Install [WiseGit](https://github.com/NibbleByte/UnityWiseGit) and choose a client in its preferences.
-2. Copy the `Git Toolbar` folder anywhere under `Assets/`.
+2. Clone or download this repository into any folder under `Assets/`, for example `Assets/Git Toolbar/`.
 3. Optional, for [build stamping](BuildStamping.md#setup): add the stamp file to your `.gitignore`.
 
 The element appears in the middle of the main toolbar, next to the Play buttons. If it doesn't, Unity may have added it hidden: right-click the main toolbar and enable **Version Control → Git Status**.
