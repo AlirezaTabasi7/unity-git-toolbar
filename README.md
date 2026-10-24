@@ -37,6 +37,9 @@ This small toolbar had been on my mind for a long time. Now that I have access t
 - [Troubleshooting](#troubleshooting)
 - [Credits](#credits)
 - [License](#license)
+- [Credit in your game](#credit-in-your-game)
+- [Projects using Git Toolbar](#projects-using-git-toolbar)
+- [Contributing](#contributing)
 - [Roadmap](#roadmap)
 
 ## Requirements
@@ -63,7 +66,7 @@ The element appears in the middle of the main toolbar, next to the Play buttons.
 Git Toolbar/
 ├── README.md                     This document
 ├── BuildStamping.md              Build stamping documentation
-├── LICENSE.md                    MIT license
+├── LICENSE.md                    MIT license with the Commons Clause
 ├── Documentation~/               Images for the documents (ignored by Unity)
 ├── Editor/                       GitToolbar.Editor assembly (editor only)
 │   ├── GitToolbar.Editor.asmdef
@@ -435,7 +438,33 @@ Other details:
 
 ## License
 
-[MIT](LICENSE.md). The toolbar icon keeps its own [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) license, see [Credits](#credits).
+[MIT with the Commons Clause](LICENSE.md). The toolbar icon keeps its own [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) license, see [Credits](#credits).
+
+In short:
+
+- You can use Git Toolbar for free in any project, including commercial games. Shipping a game made with it, build stamp included, is fine.
+- You can modify it, fork it and share it, as long as the license file comes along.
+- You can't sell it, or sell a product or service whose value comes mainly from it. That includes selling it on an asset store, alone or in a bundle.
+
+The license file is the binding text; this summary is only a guide. Version 0.9.0 beta was released under the plain MIT license, and that release keeps it.
+
+## Credit in your game
+
+Not required, but appreciated: if Git Toolbar helped you make your game, I'd be glad to see a line like this in its credits:
+
+> Git Toolbar by Alireza Tabasi
+
+## Projects using Git Toolbar
+
+If you use this tool in your game or project, let me know by [opening an issue](https://github.com/AlirezaTabasi7/unity-git-toolbar/issues/new) with the project's name and a link. I'd like to list every project that uses it here.
+
+*No projects listed yet.*
+
+## Contributing
+
+Contributions are welcome: bug reports, feature ideas and pull requests. This repository is actively maintained, and issues are fixed on a regular basis.
+
+By submitting a pull request, you agree that your contribution is licensed under the same terms as the rest of the project.
 
 ## Roadmap
 
