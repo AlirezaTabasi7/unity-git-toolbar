@@ -25,7 +25,6 @@ namespace GitToolbar
     {
         const int k_CommandTimeout = 10000;
         const int k_FileOperationTimeout = 60000;
-        const int k_RecentBranchCount = 10;
 
         public string Branch;        // Branch name, or null when HEAD is detached.
         public string ShortCommit;   // Abbreviated HEAD commit.
@@ -45,7 +44,6 @@ namespace GitToolbar
         public string LastCommitAuthor;
         public DateTime? LastCommitTime;
 
-        public readonly List<string> RecentBranches = new List<string>();  // Other local branches, most recently committed first.
         public readonly List<StashEntry> StashList = new List<StashEntry>(); // Newest first.
 
         public struct StashEntry
@@ -110,17 +108,6 @@ namespace GitToolbar
                 status.LastCommitTime = DateTimeOffset.FromUnixTimeSeconds(unixTime).LocalDateTime;
             }
 
-            var branches = ShellUtils.ExecuteCommand("git", $"for-each-ref --sort=-committerdate --count={k_RecentBranchCount + 1} --format=%(refname:short) refs/heads/", root, k_CommandTimeout).Output;
-            if (!string.IsNullOrEmpty(branches))
-            {
-                foreach (var branch in branches.Split('\n'))
-                {
-                    var name = branch.Trim();
-                    if (name.Length > 0 && name != status.Branch && status.RecentBranches.Count < k_RecentBranchCount)
-                        status.RecentBranches.Add(name);
-                }
-            }
-
             if (status.Stashes > 0)
             {
                 // Ref, subject and relative age, separated by unit separators.
@@ -140,7 +127,7 @@ namespace GitToolbar
         }
 
         /// <summary>
-        /// Runs a git command that changes working copy files (switch, stash, ...) synchronously on the calling (main) thread,
+        /// Runs a git command that changes working copy files (stash push / apply / pop) synchronously on the calling (main) thread,
         /// so Unity cannot import while files change. Returns the git error, or null on success.
         /// </summary>
         public static string RunFileOperation(string args)

@@ -40,10 +40,12 @@ namespace GitToolbar
         static readonly Color32 k_Cyan = Pick("#39C5CF", "#1B7C83");
         static readonly Color32 k_Violet = Pick("#A371F7", "#8250DF");
 
-        static readonly Dictionary<Color32, Texture2D> s_Icons = new Dictionary<Color32, Texture2D>();
-        static Texture2D s_BaseIcon;
+        const string k_BaseIconName = "GitToolbarIcon";
+        const string k_IconFolder = "Icons";
 
-        static readonly bool s_IsClone;
+        // Loaded icon assets by color. Unity owns them, so nothing needs destroying.
+        static readonly Dictionary<Color32, Texture2D> s_Icons = new Dictionary<Color32, Texture2D>();
+
         static GitRepoStatus s_Status;
         static bool s_HasQueried;
         static bool s_IsFetching;
@@ -56,15 +58,10 @@ namespace GitToolbar
 
         static GitBranchStatus()
         {
-            // ParrelSync clones share these scripts but aren't git repositories - stay hidden and never run git there.
-            s_IsClone = ParrelSyncSupport.IsClone();
-            if (s_IsClone) return;
-
             // Branch switches and commits usually happen outside Unity, so re-check whenever the editor regains focus.
             EditorApplication.focusChanged += hasFocus => { if (hasFocus) RequestRefresh(); };
             EditorApplication.projectChanged += RequestRefresh;
             EditorSceneManager.sceneSaved += _ => RequestRefresh();
-            AssemblyReloadEvents.beforeAssemblyReload += DestroyIcons;
 
             // Unsaved scenes / prefabs only need a repaint, not a git query.
             EditorSceneManager.sceneDirtied += _ => RepaintToolbar();
@@ -80,6 +77,9 @@ namespace GitToolbar
             EditorApplication.update += OnUpdate;
 
             // WiseGit re-scans after asset changes and background fetches (which update the behind count and locks).
+            // Bake missing state icons after startup, since importing assets isn't safe during InitializeOnLoad.
+            EditorApplication.delayCall += EnsureIcons;
+
             EditorApplication.delayCall += () =>
             {
                 var database = GitStatusesDatabase.Instance;
@@ -102,8 +102,8 @@ namespace GitToolbar
 
             return new MainToolbarButton(new MainToolbarContent(text, GetIcon(color), s_LastTooltip), () => RunAction(GitContextMenusManager.ShowLogAll))
             {
-                // Hide entirely in clones, and when git is unavailable or the project is not a repository.
-                displayed = !s_IsClone && (status != null || !s_HasQueried),
+                // Hide entirely when git is unavailable or the project is not a repository.
+                displayed = status != null || !s_HasQueried,
                 populateContextMenu = PopulateActionsMenu
             };
         }
@@ -113,8 +113,6 @@ namespace GitToolbar
         /// </summary>
         public static void RepaintToolbar()
         {
-            if (s_IsClone) return;
-
             MainToolbar.Refresh(k_Path);
             EditorApplication.delayCall += () => ToolbarLabelWidth.Unclamp(k_Path, ref s_Label);
         }
@@ -148,8 +146,6 @@ namespace GitToolbar
 
         static void RequestRefresh()
         {
-            if (s_IsClone) return;
-
             if (s_IsFetching)
             {
                 s_FetchQueued = true;
@@ -260,7 +256,7 @@ namespace GitToolbar
             AppendCount(sb, "!", status.Modified, k_Orange);
             AppendCount(sb, "?", status.Untracked, k_Violet);
             AppendCount(sb, "◌", unsaved.Count, k_Magenta);
-            if (locks.Count > 0) sb.Append(" 🔒").Append(locks.Count);
+            if (locks.Count > 0) sb.Append(' ').Append(LockCount(locks.Count.ToString()));
 
             return sb.ToString();
         }
@@ -337,7 +333,7 @@ namespace GitToolbar
             if (locks.Count == 0) return;
 
             sb.AppendLine();
-            sb.AppendLine($"<b>Locks</b>  🔒{locks.Count}");
+            sb.AppendLine("<b>Locks</b>  " + LockCount(locks.Count.ToString()));
             AppendLockGroup(sb, locks, VCLockStatus.LockedHere, "Locked by you - others can't change these until you push or release them", false);
             AppendLockGroup(sb, locks, VCLockStatus.LockedOther, "Locked by others - don't edit these, your changes can't be pushed", true);
             AppendLockGroup(sb, locks, VCLockStatus.LockedButStolen, "Stolen - you locked these, but someone else holds the lock now", true);
@@ -385,7 +381,7 @@ namespace GitToolbar
             sb.AppendLine(Colorize("!N", k_Orange) + " modified files, not staged");
             sb.AppendLine(Colorize("?N", k_Violet) + " untracked files");
             sb.AppendLine(Colorize("◌N", k_Magenta) + " unsaved scenes / prefabs, not on disk yet");
-            sb.AppendLine("🔒N files locked with Git LFS (reported by WiseGit)");
+            sb.AppendLine(LockCount("N") + " files locked with Git LFS (reported by WiseGit)");
             sb.AppendLine("@abc1234 detached HEAD at that commit");
         }
 
@@ -406,6 +402,10 @@ namespace GitToolbar
 
         static string Colorize(string text, Color32 color) => $"<color=#{ColorUtility.ToHtmlStringRGB(color)}>{text}</color>";
 
+        // 🔒 is drawn as a color emoji multiplied by the text color: black on the light skin, dimmed by any other color.
+        // White keeps its own colors on both skins.
+        static string LockCount(string count) => Colorize("🔒", new Color32(255, 255, 255, 255)) + Colorize(count, k_Gray);
+
         static Color32 Pick(string dark, string light)
         {
             ColorUtility.TryParseHtmlString(EditorGUIUtility.isProSkin ? dark : light, out var color);
@@ -416,15 +416,44 @@ namespace GitToolbar
 
         #region Icon
 
-        // The base icon is the orange git diamond with a white glyph; recolor the diamond and keep the glyph white.
+        // Each state color has its own baked icon in Resources/Icons/, named by color (GitToolbarIcon-F85149.png).
+        // They ship with the tool; a missing one (e.g. a new color) is generated once from the base icon at startup.
         static Texture2D GetIcon(Color32 tint)
         {
             if (s_Icons.TryGetValue(tint, out var icon) && icon != null) return icon;
 
-            if (s_BaseIcon == null) s_BaseIcon = Resources.Load<Texture2D>("GitToolbarIcon");
-            if (s_BaseIcon == null || !s_BaseIcon.isReadable) return s_BaseIcon;
+            icon = Resources.Load<Texture2D>(k_IconFolder + "/" + IconName(tint));
+            if (icon == null) return Resources.Load<Texture2D>(k_BaseIconName); // Not baked yet - EnsureIcons runs right after startup.
 
-            var pixels = s_BaseIcon.GetPixels32();
+            s_Icons[tint] = icon;
+            return icon;
+        }
+
+        static string IconName(Color32 tint) => k_BaseIconName + "-" + ColorUtility.ToHtmlStringRGB(tint);
+
+        static void EnsureIcons()
+        {
+            var baked = false;
+            foreach (GitRepoState state in Enum.GetValues(typeof(GitRepoState)))
+            {
+                baked |= BakeIcon(StateColor(state));
+            }
+            if (baked) RepaintToolbar();        }
+
+        /// <summary>
+        /// Writes the icon for this color next to the base icon and imports it with the base icon's settings.
+        /// Returns false if it already exists or can't be made (the base icon needs Read/Write enabled).
+        /// </summary>
+        static bool BakeIcon(Color32 tint)
+        {
+            if (Resources.Load<Texture2D>(k_IconFolder + "/" + IconName(tint)) != null) return false;
+
+            var baseIcon = Resources.Load<Texture2D>(k_BaseIconName);
+            var basePath = AssetDatabase.GetAssetPath(baseIcon);
+            if (baseIcon == null || !baseIcon.isReadable || string.IsNullOrEmpty(basePath)) return false;
+
+            // The base icon is the orange git diamond with a white glyph; recolor the diamond and keep the glyph white.
+            var pixels = baseIcon.GetPixels32();
             for (int i = 0; i < pixels.Length; i++)
             {
                 var p = pixels[i];
@@ -434,26 +463,32 @@ namespace GitToolbar
                 pixels[i] = new Color32(c.r, c.g, c.b, p.a);
             }
 
-            icon = new Texture2D(s_BaseIcon.width, s_BaseIcon.height, TextureFormat.RGBA32, false)
-            {
-                hideFlags = HideFlags.HideAndDontSave,
-                filterMode = FilterMode.Bilinear,
-                wrapMode = TextureWrapMode.Clamp
-            };
-            icon.SetPixels32(pixels);
-            icon.Apply();
+            var folder = Path.GetDirectoryName(basePath).Replace('\\', '/') + "/" + k_IconFolder;
+            var path = folder + "/" + IconName(tint) + ".png";
+            Directory.CreateDirectory(folder);
 
-            s_Icons[tint] = icon;
-            return icon;
-        }
-
-        static void DestroyIcons()
-        {
-            foreach (var icon in s_Icons.Values)
+            var texture = new Texture2D(baseIcon.width, baseIcon.height, TextureFormat.RGBA32, false);
+            try
             {
-                if (icon != null) UnityEngine.Object.DestroyImmediate(icon);
+                texture.SetPixels32(pixels);
+                File.WriteAllBytes(path, texture.EncodeToPNG());
             }
-            s_Icons.Clear();
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(texture);
+            }
+
+            AssetDatabase.ImportAsset(path);
+            if (AssetImporter.GetAtPath(basePath) is TextureImporter baseImporter && AssetImporter.GetAtPath(path) is TextureImporter importer)
+            {
+                var settings = new TextureImporterSettings();
+                baseImporter.ReadTextureSettings(settings);
+                settings.readable = false;
+                importer.SetTextureSettings(settings);
+                importer.textureCompression = baseImporter.textureCompression;
+                importer.SaveAndReimport();
+            }
+            return true;
         }
 
         #endregion
@@ -481,8 +516,6 @@ namespace GitToolbar
             AddAction(menu, "Revert…", hasChanges, GitContextMenusManager.RevertAll);
             menu.AppendSeparator();
 
-            AppendSwitchToMenu(menu, status);
-            AddAction(menu, "Switch Branch…", true, () => GitContextMenusManager.Switch());
             AppendStashMenu(menu, status);
             AddAction(menu, "Repo Browser", status?.Upstream != null, () => GitContextMenusManager.RepoBrowser(".", status.Upstream));
             menu.AppendSeparator();
@@ -493,21 +526,6 @@ namespace GitToolbar
             menu.AppendSeparator();
 
             menu.AppendAction("Refresh Status", _ => RequestRefresh());
-        }
-
-        static void AppendSwitchToMenu(DropdownMenu menu, GitRepoStatus status)
-        {
-            if (status == null || status.RecentBranches.Count == 0)
-            {
-                AddAction(menu, "Switch To/(no other local branches)", false, null);
-                return;
-            }
-
-            var canSwitch = !EditorApplication.isPlayingOrWillChangePlaymode;
-            foreach (var branch in status.RecentBranches)
-            {
-                AddAction(menu, "Switch To/" + MenuSafe(branch), canSwitch, () => SwitchTo(branch));
-            }
         }
 
         static void AppendStashMenu(DropdownMenu menu, GitRepoStatus status)
@@ -565,18 +583,6 @@ namespace GitToolbar
                 return;
 
             GitContextMenusManager.CommitAll();
-        }
-
-        static void SwitchTo(string branch)
-        {
-            var status = s_Status;
-            if (status != null && status.Staged + status.Modified + status.Conflicts > 0 &&
-                !EditorUtility.DisplayDialog("Uncommitted changes",
-                    $"You have uncommitted changes. Git carries them over to \"{branch}\" when it can, " +
-                    "and refuses to switch if they would be overwritten.\n\nSwitch anyway?", "Switch", "Cancel"))
-                return;
-
-            RunFileOperation($"Switch to \"{branch}\"", $"switch \"{branch}\"");
         }
 
         static void DropStash(GitRepoStatus.StashEntry entry)
