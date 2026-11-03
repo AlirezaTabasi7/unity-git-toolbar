@@ -28,7 +28,7 @@ versionText.text = git != null ? $"{Application.version} ({git})" : Application.
 ## How it works
 
 - Before each player build, from the editor, a build script or CI, the stamp is written to `Assets/Resources/BuildGitInfo.json`. It's deleted after the build, or on the next editor load if the build failed.
-- With **Warn On Dirty Build** on, building with uncommitted changes asks first. Untracked files count. The dialog never appears in batch mode, so CI isn't blocked.
+- With **Warn On Dirty Build** on, building with uncommitted changes asks first. Untracked files count. The check runs before other build hooks, and untracked files created after the build started are ignored, so files other hooks create during the build don't count. The dialog never appears in batch mode, so CI isn't blocked.
 - If git can't be read, the build continues unstamped and logs a warning. Stamping never fails a build.
 
 ## Limitations
@@ -36,3 +36,5 @@ versionText.text = git != null ? $"{Application.version} ({git})" : Application.
 - Only the player build is stamped, not Addressables content built separately.
 - The commit is your local HEAD, which may not be pushed yet.
 - `IsDirty` says that there were changes, not which ones.
+- A tracked file that another build hook modifies before the check counts as a change. That can only happen if the hook also uses `int.MinValue` as its callback order.
+- If the warning lists Unity files you didn't change and `git diff` is empty, the cause is usually line endings: git checks the files out with CRLF and Unity saves them with LF. [This gist](https://gist.github.com/AlirezaTabasi7/7b8a36c9e5a0e2691f5dce8440d79656) explains the `.gitattributes` fix.
