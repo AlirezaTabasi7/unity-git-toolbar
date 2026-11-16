@@ -1,0 +1,50 @@
+# Attaches a .unitypackage to every published release.
+# Run it by hand (Actions → Release package → Run workflow) to attach one to an existing release.
+name: Release package
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag, e.g. v1.1.0
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  unitypackage:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      # The build script comes from the default branch, so older tags can be packaged too.
+      - uses: actions/checkout@v4
+        with:
+          path: tools
+          sparse-checkout: .github/scripts
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+          path: src
+
+      - name: Check the package version matches the tag
+        working-directory: src
+        run: |
+          if [ -f package.json ]; then
+            version=$(python3 -c 'import json; print(json.load(open("package.json"))["version"])')
+            if [ "v$version" != "${TAG%%-*}" ] && [ "v$version" != "$TAG" ]; then
+              echo "::error::package.json says $version but the tag is $TAG"
+              exit 1
+            fi
+          fi
+
+      - name: Build the .unitypackage
+        run: python3 tools/.github/scripts/build_unitypackage.py src "Assets/Git Toolbar" 111ff15a44017d041b2819456acf4c39 "GitToolbar-${TAG#v}.unitypackage"
+
+      - name: Attach it to the release
+        run: gh release upload "$TAG" "GitToolbar-${TAG#v}.unitypackage" --clobber --repo "$GITHUB_REPOSITORY"

@@ -1,0 +1,25 @@
+{
+  "name": "com.alirezatabasi.git-toolbar",
+  "displayName": "Git Toolbar",
+  "version": "1.1.0",
+  "unity": "6000.3",
+  "description": "Shows your git status in Unity's main toolbar, with common git actions on right-click. Requires WiseGit (devlocker.versioncontrol.wisegit).",
+  "keywords": [
+    "git",
+    "toolbar",
+    "versioncontrol",
+    "wisegit"
+  ],
+  "author": {
+    "name": "Alireza Tabasi",
+    "url": "https://github.com/AlirezaTabasi7"
+  },
+  "license": "SEE LICENSE IN LICENSE.md",
+  "documentationUrl": "https://github.com/AlirezaTabasi7/unity-git-toolbar#readme",
+  "changelogUrl": "https://github.com/AlirezaTabasi7/unity-git-toolbar/releases",
+  "licensesUrl": "https://github.com/AlirezaTabasi7/unity-git-toolbar/blob/main/LICENSE.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AlirezaTabasi7/unity-git-toolbar.git"
+  }
+}

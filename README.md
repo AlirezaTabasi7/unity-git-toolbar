@@ -12,8 +12,11 @@ Shows your git status in Unity's main toolbar, with common git actions on right-
 
 ## Installation
 
-1. Install WiseGit.
-2. Copy this repository into any folder under `Assets/`.
+1. Install WiseGit, for example in **Window → Package Manager → + → Install package from git URL…** with `https://github.com/NibbleByte/UnityWiseGit.git#upm`. Its README lists the other ways.
+2. Install Git Toolbar, in any one of these ways:
+   - **Git URL:** the same Package Manager menu, with `https://github.com/AlirezaTabasi7/unity-git-toolbar.git`. Add a release tag such as `#v1.1.0` to the URL to pin that version.
+   - **Unity package:** download `GitToolbar-<version>.unitypackage` from [Releases](https://github.com/AlirezaTabasi7/unity-git-toolbar/releases) and open it. It installs into `Assets/Git Toolbar/`.
+   - **Copy:** copy this repository into any folder under `Assets/`.
 
 If the status doesn't show up, right-click the toolbar and enable **Version Control → Git Status**.
 

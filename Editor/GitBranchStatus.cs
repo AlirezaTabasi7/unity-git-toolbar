@@ -438,7 +438,8 @@ namespace GitToolbar
             {
                 baked |= BakeIcon(StateColor(state));
             }
-            if (baked) RepaintToolbar();        }
+            if (baked) RepaintToolbar();
+        }
 
         /// <summary>
         /// Writes the icon for this color next to the base icon and imports it with the base icon's settings.
@@ -451,6 +452,11 @@ namespace GitToolbar
             var baseIcon = Resources.Load<Texture2D>(k_BaseIconName);
             var basePath = AssetDatabase.GetAssetPath(baseIcon);
             if (baseIcon == null || !baseIcon.isReadable || string.IsNullOrEmpty(basePath)) return false;
+
+            // Packages installed from a git URL or a registry are read-only; they ship every icon already baked.
+            var package = UnityEditor.PackageManager.PackageInfo.FindForAssetPath(basePath);
+            if (package != null && package.source != UnityEditor.PackageManager.PackageSource.Embedded
+                && package.source != UnityEditor.PackageManager.PackageSource.Local) return false;
 
             // The base icon is the orange git diamond with a white glyph; recolor the diamond and keep the glyph white.
             var pixels = baseIcon.GetPixels32();
