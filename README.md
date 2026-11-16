@@ -56,19 +56,18 @@ The icon shows the most urgent state:
 
 **Project Settings → Git Toolbar**, saved in `ProjectSettings/` so the team shares them.
 
-<img src="Documentation~/settings.png" alt="Git Toolbar page in Project Settings" width="620">
-
 | Setting | Default | |
 |---|---|---|
 | Protected Branches | `main`, `master`, `release/*` | Shows `⚠` and asks for confirmation before committing from the menu. To enforce it, use your git host's branch protection and a `pre-commit` hook. |
 | Stamp Builds | On | Records the branch and commit in player builds, readable at runtime. See [Build Stamping](BuildStamping.md). |
 | Warn On Dirty Build | On | Asks before building with uncommitted changes. |
 
-<img src="Documentation~/toolbar-protected.png" alt="Protected branch main with a red warning sign" width="237">
-
 ## Disclaimer
 
 - **WiseGit's Pull, Push, Fetch and Merge freeze Unity** until the git client closes. This is intentional: it stops Unity from importing while files change.
+- **No tooltip while the game runs.** Unity hides all toolbar tooltips in Play mode, its own buttons' too. Pause to see the status details and the color key.
+- **LFS locks don't show yet.** The lock count comes from WiseGit, and WiseGit 1.0.7 drops all locks before storing them ([UnityWiseGit#4](https://github.com/NibbleByte/UnityWiseGit/issues/4)). It appears once that's fixed.
+- **Tested on Windows only.** macOS and Linux should work, but haven't been tried.
 
 ## Roadmap
 
